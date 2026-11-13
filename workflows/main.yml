@@ -1,0 +1,58 @@
+
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git zip unzip \
+            openjdk-17-jdk \
+            python3-pip \
+            python3-venv \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libffi-dev \
+            libssl-dev
+
+      - name: Install Buildozer
+        run: |
+          pip3 install --user --upgrade buildozer cython
+
+      - name: Create Buildozer config
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          buildozer init
+          sed -i 's/^title = .*/title = Number Luck/' buildozer.spec
+          sed -i 's/^package.name = .*/package.name = numberluck/' buildozer.spec
+          sed -i 's/^package.domain = .*/package.domain = org.example/' buildozer.spec
+          sed -i 's/^source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas/' buildozer.spec
+          sed -i 's/^# *requirements = .*/requirements = python3,kivy/' buildozer.spec
+          sed -i 's/^# *orientation = .*/orientation = portrait/' buildozer.spec
+
+      - name: Build APK
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          yes | buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Number-Luck-APK
+          path: bin/*.apk
+          
